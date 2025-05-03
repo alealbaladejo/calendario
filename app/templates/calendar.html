@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Registro de Horas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        function toggleFields(dateStr) {
+            const status = document.querySelector(`select[name="status_${dateStr}"]`).value;
+            const inputs = document.querySelectorAll(`.inputs_${dateStr}`);
+            inputs.forEach(input => {
+                input.style.display = status === 'trabajado' ? 'block' : 'none';
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>Horas Trabajadas - {{ "%02d"|format(month) }}/{{ year }}</h1>
+
+    <form method="GET" class="month-selector">
+        <label for="month">Mes:</label>
+        <select name="month" id="month">
+            {% for m in range(1, 13) %}
+            <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ "%02d"|format(m) }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="year">Año:</label>
+        <select name="year" id="year">
+            {% for y in range(current_year - 2, current_year + 2) %}
+            <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit">Ver</button>
+    </form>
+
+    <form method="POST">
+        <table>
+            <thead>
+                <tr>
+                    <th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th>
+                    <th>Vie</th><th>Sáb</th><th>Dom</th><th>Total Semanal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for week in weeks %}
+                <tr>
+                    {% for day in week %}
+                    <td>
+                        {% if day.date %}
+                            <strong>{{ day.date.day }}</strong><br>
+                            <select name="status_{{ day.date }}" onchange="toggleFields('{{ day.date }}')">
+                                <option value="libre" {% if day.status == 'libre' %}selected{% endif %}>Libre</option>
+                                <option value="trabajado" {% if day.status == 'trabajado' %}selected{% endif %}>Trabajado</option>
+                            </select>
+
+                            <div class="inputs_{{ day.date }}" style="display: {% if day.status == 'trabajado' %}block{% else %}none{% endif %};">
+                                <div class="hour-row">
+                                    <label>Turno 1</label><br>
+                                    <input type="text" name="entrada1_{{ day.date }}" value="{{ day.entrada1 }}" placeholder="HH:MM">
+                                </div>
+                                <div class="hour-row">
+                                    <input type="text" name="salida1_{{ day.date }}" value="{{ day.salida1 }}" placeholder="HH:MM">
+                                </div>
+                                <div class="hour-row">
+                                    <label>Turno 2</label><br>
+                                    <input type="text" name="entrada2_{{ day.date }}" value="{{ day.entrada2 }}" placeholder="HH:MM">
+                                </div>
+                                <div class="hour-row">
+                                    <input type="text" name="salida2_{{ day.date }}" value="{{ day.salida2 }}" placeholder="HH:MM">
+                                </div>
+                                <small class="total-dia">Total día: {{ day.total_dia }} h</small>
+                            </div>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                    <td>
+                        {% set mostrado = false %}
+                        {% for day in week %}
+                            {% if day.get('weekly_total') and not mostrado %}
+                                <strong>{{ day.weekly_total }} h</strong>
+                                {% set mostrado = true %}
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit">Guardar</button>
+    </form>
+
+    <h3>Total del mes: {{ total_month_hours }} horas</h3>
+</body>
+</html>
